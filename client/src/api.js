@@ -1,6 +1,10 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:8001/api'
+// Relative URL: requests stay on the frontend's own origin and the Vite dev
+// server proxies /api to the backend (see vite.config.js). A hardcoded
+// http://localhost:8001 would resolve on the BROWSER's machine, which breaks
+// as soon as the app is accessed through a port forward or from another host.
+const API_BASE_URL = '/api'
 
 export const api = {
   async getInventory(filters = {}) {
@@ -64,6 +68,16 @@ export const api = {
     return response.data
   },
 
+  async getQuarterlyReports() {
+    const response = await axios.get(`${API_BASE_URL}/reports/quarterly`)
+    return response.data
+  },
+
+  async getMonthlyTrends() {
+    const response = await axios.get(`${API_BASE_URL}/reports/monthly-trends`)
+    return response.data
+  },
+
   async getCategorySpending() {
     const response = await axios.get(`${API_BASE_URL}/spending/categories`)
     return response.data
@@ -101,6 +115,22 @@ export const api = {
 
   async getPurchaseOrderByBacklogItem(backlogItemId) {
     const response = await axios.get(`${API_BASE_URL}/purchase-orders/${backlogItemId}`)
+    return response.data
+  },
+
+  async getRestockRecommendations(budget) {
+    const params = new URLSearchParams({ budget: String(budget) })
+    const response = await axios.get(`${API_BASE_URL}/restock/recommendations?${params.toString()}`)
+    return response.data
+  },
+
+  async createRestockOrder(orderData) {
+    const response = await axios.post(`${API_BASE_URL}/restock/orders`, orderData)
+    return response.data
+  },
+
+  async getRestockOrders() {
+    const response = await axios.get(`${API_BASE_URL}/restock/orders`)
     return response.data
   }
 }

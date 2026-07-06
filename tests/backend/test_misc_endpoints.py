@@ -65,27 +65,50 @@ class TestDemandEndpoints:
                 assert percent_change < 2.0, \
                     f"Item {item['item_name']} has {percent_change:.2f}% change, expected < 2%"
 
-    def test_demand_forecast_has_new_items(self, client):
-        """Test that new demand forecast items exist."""
+    def test_demand_forecast_skus_exist_in_inventory(self, client):
+        """Every demand forecast must reference a real inventory item.
+
+        Restocking recommendations join forecasts to inventory by SKU to get
+        unit costs and stock levels, so a forecast for a SKU that isn't in
+        inventory can never be priced or recommended. This also enforces the
+        project rule that SKUs must reference valid inventory items.
+        """
+        inventory = client.get("/api/inventory").json()
+        inventory_names = {item["sku"]: item["name"] for item in inventory}
+
         response = client.get("/api/demand")
-        data = response.json()
+        forecasts = response.json()
+        assert len(forecasts) > 0
 
-        # Check for the new items we added
-        skus = [item["item_sku"] for item in data]
+        orphans = [f["item_sku"] for f in forecasts if f["item_sku"] not in inventory_names]
+        assert orphans == [], f"Forecast SKUs missing from inventory: {orphans}"
 
-        # Should have Temperature Sensor Module and Logic Controller Board
-        assert "SNR-420" in skus, "Missing Temperature Sensor Module"
-        assert "CTL-330" in skus, "Missing Logic Controller Board"
-
-        # Verify they are marked as stable
-        for item in data:
-            if item["item_sku"] in ["SNR-420", "CTL-330"]:
-                assert item["trend"].lower() == "stable", \
-                    f"New item {item['item_name']} should have stable trend"
+        # The names must agree too, so the two datasets can't silently drift.
+        for forecast in forecasts:
+            assert forecast["item_name"] == inventory_names[forecast["item_sku"]], \
+                f"Forecast name for {forecast['item_sku']} does not match inventory"
 
 
 class TestBacklogEndpoints:
     """Test suite for backlog endpoints."""
+
+    def test_backlog_skus_exist_in_inventory(self, client):
+        """Every backlog item must reference a real inventory item.
+
+        Same referential-integrity rule as the demand forecasts: the
+        dashboard and detail modals join backlog rows to inventory by SKU.
+        """
+        inventory = client.get("/api/inventory").json()
+        inventory_names = {item["sku"]: item["name"] for item in inventory}
+
+        backlog = client.get("/api/backlog").json()
+        assert len(backlog) > 0
+
+        orphans = [b["item_sku"] for b in backlog if b["item_sku"] not in inventory_names]
+        assert orphans == [], f"Backlog SKUs missing from inventory: {orphans}"
+        for item in backlog:
+            assert item["item_name"] == inventory_names[item["item_sku"]], \
+                f"Backlog name for {item['item_sku']} does not match inventory"
 
     def test_get_backlog(self, client):
         """Test getting backlog items."""

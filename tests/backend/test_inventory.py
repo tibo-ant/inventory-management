@@ -108,7 +108,7 @@ class TestInventoryEndpoints:
         required_fields = [
             "id", "sku", "name", "category", "warehouse",
             "quantity_on_hand", "reorder_point", "unit_cost",
-            "location", "last_updated"
+            "location", "last_updated", "lead_time_days"
         ]
 
         for item in data:

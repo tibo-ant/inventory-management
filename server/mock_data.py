@@ -35,5 +35,12 @@ recent_transactions = load_json_file('transactions.json')
 # Load purchase orders
 purchase_orders = load_json_file('purchase_orders.json')
 
+# Restocking orders submitted from the Restocking tab.
+# Intentionally NOT backed by a JSON file: this list starts empty and only
+# accumulates in memory, so a server restart resets it. This mirrors the
+# project's "changes don't persist" convention and keeps the sample data
+# files pristine.
+restock_orders = []
+
 # All data is now loaded from JSON files in the data/ directory
 # This allows for easier maintenance and updates of the sample data
