@@ -48,6 +48,16 @@ Surfaces worth driving per area:
 - **i18n** — `localStorage.setItem('app-locale', 'ja')` then reload switches
   the whole app (labels, currency symbol) to Japanese.
 
+## Gotchas that will produce false PASSes
+
+- **A 200 from `curl localhost:<port>` inside the container does not prove
+  the port is reachable from outside it.** `localhost` can resolve to the
+  IPv6 loopback (`::1`) only, while port forwarders dial `127.0.0.1`. Check
+  the actual bind with `ss -ltnp | grep :<port>` — it must show `0.0.0.0` or
+  `*`, not `[::1]` or `127.0.0.1`. Both dev servers are configured to bind
+  all interfaces (uvicorn `host="0.0.0.0"`, Vite `server.host: true`); if a
+  port shows a loopback-only bind, that configuration has regressed.
+
 ## Gotchas that will produce false failures
 
 - **`.badge` text renders UPPERCASE.** The global `.badge` class applies
