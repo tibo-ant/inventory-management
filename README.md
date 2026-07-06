@@ -16,6 +16,7 @@ A full-stack demo application for a Claude Code workshop — inventory managemen
 - Inventory tracking across multiple warehouses
 - Order management with status tracking
 - Demand forecasting with trend analysis
+- Budget-based restocking recommendations with one-click order submission
 - Backlog monitoring
 - Spending analytics
 

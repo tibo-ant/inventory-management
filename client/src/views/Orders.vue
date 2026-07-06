@@ -27,6 +27,61 @@
         </div>
       </div>
 
+      <div v-if="restockOrdersError" class="error">{{ restockOrdersError }}</div>
+
+      <!-- Only rendered once the Restocking feature has been used, so Orders looks unchanged until then -->
+      <div v-if="restockOrders.length > 0" class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">{{ t('orders.submittedOrders') }} ({{ restockOrders.length }})</h3>
+            <p class="card-subtitle">{{ t('orders.submittedOrdersDescription') }}</p>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="restock-orders-table">
+            <thead>
+              <tr>
+                <th>{{ t('orders.table.orderNumber') }}</th>
+                <th>{{ t('orders.table.orderDate') }}</th>
+                <th>{{ t('orders.table.items') }}</th>
+                <th>{{ t('orders.table.total') }}</th>
+                <th>{{ t('orders.table.leadTime') }}</th>
+                <th>{{ t('orders.table.expectedDelivery') }}</th>
+                <th>{{ t('orders.table.status') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="order in restockOrders" :key="order.id">
+                <td><strong>{{ order.order_number }}</strong></td>
+                <td>{{ formatDate(order.created_date) }}</td>
+                <td>
+                  <details class="items-details">
+                    <summary class="items-summary">
+                      {{ t('orders.itemsCount', { count: order.items.length }) }}
+                    </summary>
+                    <div class="items-dropdown">
+                      <div v-for="item in order.items" :key="item.sku" class="item-entry">
+                        <span class="item-name">{{ translateProductName(item.name) }}</span>
+                        <span class="item-meta">{{ t('orders.quantity') }}: {{ item.quantity }} @ {{ currencySymbol }}{{ item.unit_cost }}</span>
+                      </div>
+                    </div>
+                  </details>
+                </td>
+                <td><strong>{{ currencySymbol }}{{ order.total_cost.toLocaleString() }}</strong></td>
+                <td>{{ t('restocking.leadTimeDays', { days: order.lead_time_days }) }}</td>
+                <td>{{ formatDate(order.expected_delivery) }}</td>
+                <td>
+                  <!-- Reuse the same status-class mapping as the All Orders table below: restock orders
+                       are always "Submitted" today (so this renders identically to before), but this way
+                       the badge tracks the server-owned status field if restock orders ever gain a lifecycle -->
+                  <span :class="['badge', getOrderStatusClass(order.status)]">{{ t(`status.${order.status.toLowerCase()}`) }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">{{ t('orders.allOrders') }} ({{ orders.length }})</h3>
@@ -95,6 +150,8 @@ export default {
     const loading = ref(true)
     const error = ref(null)
     const orders = ref([])
+    const restockOrders = ref([])
+    const restockOrdersError = ref(null)
 
     // Use shared filters
     const {
@@ -129,6 +186,20 @@ export default {
       loadOrders()
     })
 
+    // Restock orders are not affected by the global filters (they aren't tied to
+    // customer/warehouse/category filters), so they are intentionally left out of the watch above.
+    const loadRestockOrders = async () => {
+      restockOrdersError.value = null
+      try {
+        restockOrders.value = await api.getRestockOrders()
+      } catch (err) {
+        // Non-fatal: the customer-orders table must still render even if the restock endpoint fails,
+        // but the failure must still be surfaced per the project's always-show-error-states rule.
+        console.error('Failed to load restock orders:', err)
+        restockOrdersError.value = t('orders.submittedOrdersError')
+      }
+    }
+
     const getOrdersByStatus = (status) => {
       return orders.value.filter(order => order.status === status)
     }
@@ -153,13 +224,18 @@ export default {
       })
     }
 
-    onMounted(loadOrders)
+    onMounted(() => {
+      loadOrders()
+      loadRestockOrders()
+    })
 
     return {
       t,
       loading,
       error,
       orders,
+      restockOrders,
+      restockOrdersError,
       getOrdersByStatus,
       getOrderStatusClass,
       formatDate,
@@ -172,6 +248,12 @@ export default {
 </script>
 
 <style scoped>
+.card-subtitle {
+  color: #64748b;
+  font-size: 0.813rem;
+  margin-top: 0.25rem;
+}
+
 /* Fixed table layout to prevent column shifting */
 .orders-table {
   table-layout: fixed;

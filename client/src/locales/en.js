@@ -6,6 +6,7 @@ export default {
     orders: 'Orders',
     finance: 'Finance',
     demandForecast: 'Demand Forecast',
+    restocking: 'Restocking',
     companyName: 'Catalyst Components',
     subtitle: 'Inventory Management System'
   },
@@ -106,6 +107,9 @@ export default {
     title: 'Orders',
     description: 'View and manage customer orders',
     allOrders: 'All Orders',
+    submittedOrders: 'Submitted Orders',
+    submittedOrdersDescription: 'Restocking orders placed from the Restocking tab',
+    submittedOrdersError: 'Failed to load submitted restocking orders',
     totalOrders: 'Total Orders',
     totalRevenue: 'Total Revenue',
     avgOrderValue: 'Avg Order Value',
@@ -125,7 +129,51 @@ export default {
       totalValue: 'Total Value',
       status: 'Status',
       expectedDelivery: 'Expected Delivery',
-      actualDelivery: 'Actual Delivery'
+      actualDelivery: 'Actual Delivery',
+      leadTime: 'Lead Time',
+      total: 'Total'
+    }
+  },
+
+  // Restocking
+  restocking: {
+    title: 'Restocking',
+    description: 'Set a budget and restock the items forecasted to run short',
+    budgetLabel: 'Available Budget',
+    budgetHint: 'Recommendations update as you adjust the budget',
+    recommendedItems: 'Recommended Items',
+    noRecommendations: 'No items can be restocked within this budget. Increase the budget to see recommendations.',
+    placeOrder: 'Place Order',
+    placingOrder: 'Placing Order...',
+    orderPlaced: 'Restocking order {orderNumber} has been submitted',
+    orderPlacedDetail: 'Estimated delivery in {days} days. It now appears under Submitted Orders in the Orders tab.',
+    viewInOrders: 'View in Orders',
+    placeAnother: 'Place Another Order',
+    orderError: 'Failed to place the restocking order',
+    loadError: 'Failed to load restocking recommendations',
+    summary: {
+      budget: 'Budget',
+      orderTotal: 'Order Total',
+      remaining: 'Remaining',
+      itemCount: 'Items to Restock'
+    },
+    fill: {
+      full: 'Full',
+      partial: 'Partial'
+    },
+    leadTimeDays: '{days} days',
+    table: {
+      sku: 'SKU',
+      item: 'Item',
+      warehouse: 'Warehouse',
+      trend: 'Trend',
+      onHand: 'On Hand',
+      forecast: 'Forecast',
+      shortfall: 'Shortfall',
+      orderQty: 'Order Qty',
+      unitCost: 'Unit Cost',
+      lineTotal: 'Line Total',
+      leadTime: 'Lead Time'
     }
   },
 
@@ -204,6 +252,7 @@ export default {
     shipped: 'Shipped',
     processing: 'Processing',
     backordered: 'Backordered',
+    submitted: 'Submitted',
     inStock: 'In Stock',
     lowStock: 'Low Stock',
     adequate: 'Adequate'

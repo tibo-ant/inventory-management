@@ -9,10 +9,10 @@ tests/
 ├── pytest.ini          # Pytest configuration
 ├── backend/            # Backend API tests
 │   ├── conftest.py     # Test fixtures and configuration
-│   ├── test_inventory.py      # Inventory endpoint tests (10 tests)
-│   ├── test_orders.py         # Orders endpoint tests (15 tests)
 │   ├── test_dashboard.py      # Dashboard endpoint tests (13 tests)
-│   └── test_misc_endpoints.py # Demand, backlog, spending tests (13 tests)
+│   ├── test_inventory.py      # Inventory endpoint tests (10 tests)
+│   ├── test_misc_endpoints.py # Demand, backlog, spending, root tests (18 tests)
+│   └── test_restock.py        # Restocking endpoint tests (28 tests)
 └── README.md           # This file
 ```
 
@@ -50,61 +50,38 @@ uv run pytest --cov=../server --cov-report=html
 
 ## Test Coverage
 
-**Total: 51 tests** covering all API endpoints:
-
-### Inventory Endpoints (10 tests)
-- ✓ Get all inventory items
-- ✓ Filter by warehouse
-- ✓ Filter by category (including Power Supplies)
-- ✓ Filter by multiple criteria
-- ✓ Get specific item by ID
-- ✓ Handle non-existent items (404)
-- ✓ Validate field structure
-- ✓ Validate data types
-
-### Orders Endpoints (15 tests)
-- ✓ Get all orders
-- ✓ Filter by warehouse, category, status
-- ✓ Filter by month and quarter
-- ✓ Multiple filter combinations
-- ✓ Get specific order by ID
-- ✓ Handle non-existent orders (404)
-- ✓ Validate order items structure
-- ✓ Validate status values
-- ✓ Validate date formats
-- ✓ Validate total value calculations
+**Total: 69 tests** covering all API endpoints. See [TEST_SUMMARY.md](TEST_SUMMARY.md)
+for the full per-suite breakdown.
 
 ### Dashboard Endpoints (13 tests)
-- ✓ Get dashboard summary
-- ✓ Validate data types and non-negative values
-- ✓ Filter by warehouse, category, status, month
-- ✓ Multiple filter combinations
-- ✓ Validate calculation accuracy:
-  - Pending orders calculation
-  - Low stock items calculation
-  - Total inventory value calculation
+- Summary retrieval, data types, non-negative values
+- Filtering by warehouse, category, status, month, and combinations
+- Calculation accuracy (pending orders, low stock, total inventory value)
 
-### Miscellaneous Endpoints (13 tests)
-- **Demand Forecasts (3 tests)**
-  - ✓ Get demand forecasts
-  - ✓ Validate trend values
-  - ✓ Validate non-negative values
+### Inventory Endpoints (10 tests)
+- Retrieval, filtering (warehouse, category, combinations, "all")
+- Get by ID and 404 handling
+- Field structure (including `lead_time_days`), types, non-negative values
 
-- **Backlog Items (4 tests)**
-  - ✓ Get backlog items
-  - ✓ Validate priority values
-  - ✓ Validate quantity logic
-  - ✓ Validate days delayed
+### Demand, Backlog, Spending, Root (18 tests)
+- Demand forecasts: trends, values, stable items change < 2%, and every
+  forecast SKU resolves to a real inventory item
+- Backlog: priorities, quantity logic, days delayed, and every backlog SKU
+  resolves to a real inventory item
+- Spending: summary, monthly (all cost categories, varied values),
+  categories, transactions
+- Root: API info and response structure
 
-- **Spending Data (4 tests)**
-  - ✓ Get spending summary
-  - ✓ Get monthly spending
-  - ✓ Get category spending
-  - ✓ Get recent transactions
-
-- **Root Endpoint (2 tests)**
-  - ✓ API info endpoint
-  - ✓ Validate response structure
+### Restocking Endpoints (28 tests)
+- `GET /api/restock/recommendations`: budget bounds, shortfall-only
+  recommendations, greedy allocation never exceeding the budget, partial
+  fills, priority ordering, agreement with inventory, validation errors,
+  and a float-precision regression (exact budgets buy exact quantities)
+- `POST /api/restock/orders`: happy path, server-side re-pricing (client
+  prices ignored), lead time = max of items, expected delivery date,
+  sequential order numbers, and every 400/422 rejection path
+- `GET /api/restock/orders`: empty at start, newest first, never mixed
+  into the customer orders endpoint
 
 ## Test Features
 

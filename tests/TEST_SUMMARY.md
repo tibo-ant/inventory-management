@@ -2,108 +2,104 @@
 
 ## Test Coverage Overview
 
-All backend API tests are passing with **55 tests** covering the entire application functionality.
+All backend API tests are passing with **69 tests** across four files in `tests/backend/`.
 
 ## Test Suites
 
-### 1. Dashboard Endpoints (13 tests)
-- ✅ Dashboard summary retrieval
-- ✅ Data type validation
-- ✅ Non-negative value validation
-- ✅ Filtering by warehouse, category, status, and month
-- ✅ Multiple filter combinations
-- ✅ Power Supplies category support
-- ✅ **Actual calculations** for:
+### 1. Dashboard Endpoints — `test_dashboard.py` (13 tests)
+- Dashboard summary retrieval
+- Data type validation
+- Non-negative value validation
+- Filtering by warehouse, category, status, and month
+- Multiple filter combinations
+- Power Supplies category support
+- **Actual calculations** for:
   - Pending orders count (Processing + Backordered)
   - Low stock items (at or below reorder point)
-  - Total inventory value (quantity × unit cost)
+  - Total inventory value (quantity x unit cost)
 
-### 2. Inventory Endpoints (10 tests)
-- ✅ Get all inventory items
-- ✅ Filter by warehouse
-- ✅ Filter by category (including Power Supplies)
-- ✅ Combined warehouse and category filtering
-- ✅ "all" filter handling
-- ✅ Get specific item by ID
-- ✅ 404 handling for non-existent items
-- ✅ Required fields validation
-- ✅ Quantity and cost type validation
-- ✅ Non-negative value validation
+### 2. Inventory Endpoints — `test_inventory.py` (10 tests)
+- Get all inventory items
+- Filter by warehouse
+- Filter by category (including Power Supplies)
+- Combined warehouse and category filtering
+- "all" filter handling
+- Get specific item by ID
+- 404 handling for non-existent items
+- Required fields validation (including `lead_time_days`)
+- Quantity and cost type validation
+- Non-negative value validation
 
-### 3. Orders Endpoints (15 tests)
-- ✅ Get all orders
-- ✅ Filter by warehouse, category, status, month
-- ✅ Quarter filtering (Q1-2025)
-- ✅ Multiple filter combinations
-- ✅ Power Supplies category orders
-- ✅ Get specific order by ID
-- ✅ 404 handling for non-existent orders
-- ✅ Order items structure validation
-- ✅ Valid status values (Delivered, Shipped, Processing, Backordered)
-- ✅ Date format validation (ISO format)
-- ✅ Delivered orders have actual_delivery date
-- ✅ **Actual calculation**: Total value = sum(quantity × unit_price)
+### 3. Demand, Backlog, Spending, Root — `test_misc_endpoints.py` (18 tests)
+- **Demand forecasts (5)**: retrieval, valid trend values, non-negative values,
+  stable items change by less than 2%, and every forecast SKU + name resolves
+  to a real inventory item (referential integrity)
+- **Backlog (5)**: retrieval, valid priorities, quantity logic, days delayed,
+  and every backlog SKU + name resolves to a real inventory item
+- **Spending (6)**: summary, monthly (all cost categories present, values vary),
+  categories, transactions
+- **Root (2)**: API info and response structure
 
-### 4. Demand Forecast Endpoints (5 tests)
-- ✅ Get demand forecasts
-- ✅ Valid trend values (increasing, stable, decreasing)
-- ✅ Non-negative demand values
-- ✅ **NEW**: Stable items have < 2% change
-- ✅ **NEW**: At least 5 stable demand items exist
-- ✅ **NEW**: New items (Temperature Sensor Module, Logic Controller Board) are present and stable
-
-### 5. Backlog Endpoints (4 tests)
-- ✅ Get backlog items
-- ✅ Valid priority values (high, medium, low)
-- ✅ Non-negative quantities
-- ✅ Non-negative days delayed
-
-### 6. Spending Endpoints (6 tests)
-- ✅ Get spending summary
-- ✅ Get monthly spending data
-- ✅ **NEW**: All cost categories present (procurement, operational, labor, overhead)
-- ✅ **NEW**: Monthly spending has variety (not all the same values)
-- ✅ Get category spending
-- ✅ Get recent transactions
-
-### 7. Root Endpoint (2 tests)
-- ✅ Root endpoint returns API info
-- ✅ Message and version structure
+### 4. Restocking Endpoints — `test_restock.py` (28 tests)
+- **`GET /api/restock/recommendations` (14)**
+  - Default budget of 0 recommends nothing
+  - Response structure and types
+  - Only items with a shortfall (forecast above stock) are recommended
+  - Total never exceeds the budget; remaining budget is consistent
+  - Line totals equal quantity x unit cost
+  - Recommended quantity never exceeds the shortfall
+  - An unconstrained budget fully covers every shortfall
+  - A tighter budget buys strictly less
+  - Partial fill of whole units when a full shortfall no longer fits
+    (budget derived from the data, not hardcoded)
+  - **Regression**: a budget exactly covering a shortfall buys the full
+    shortfall (integer-cent allocation, not float floor-division)
+  - Priority ordering (increasing trend first, then largest shortfall)
+  - Recommendations agree with the inventory records they reference
+  - Negative and over-limit budgets rejected with 422
+- **`POST /api/restock/orders` (11)**
+  - Successful submission returns 201 with a fully-formed order
+  - Submitted orders appear in the listing
+  - Client-supplied prices are ignored; the server re-prices from inventory
+  - Order total equals the sum of inventory-priced lines
+  - Order lead time is the maximum of its items' lead times
+  - Expected delivery equals creation date + lead time
+  - Sequential order numbers
+  - Unknown SKU, over-budget total, and duplicate SKUs return 400
+    (and persist nothing)
+  - Malformed payloads (zero/negative quantity, empty items, zero or
+    over-limit budget, missing fields) return 422
+- **`GET /api/restock/orders` (3)**
+  - Empty at start of a session
+  - Newest-first ordering
+  - Restocking orders never leak into the customer orders endpoint
 
 ## Key Testing Principles
 
-### ✅ No Hardcoded Values
-Tests verify **actual calculations** and **real data relationships**:
-- Dashboard metrics are calculated from actual order/inventory data
-- Order totals are verified against item quantities and prices
-- Demand forecast percentages are calculated from actual current/forecasted values
-- Spending variety is detected by checking for unique values across months
+### No Hardcoded Success Values
+Tests verify actual calculations and real data relationships. Budgets used to
+probe edge cases in the restocking allocator are derived from the live data,
+so a valid edit to the sample JSON does not silently invalidate them.
 
-### ✅ Real Validation
-Tests ensure:
-- Data structures match expected schemas
-- Filters work correctly
-- Calculations are accurate
-- Business logic is sound (e.g., stable demand < 2% change)
+### Isolation
+Restocking orders accumulate in an in-memory list; an autouse fixture clears
+it around every test so tests are independent of execution order. The float
+regression test registers (and removes) its own synthetic inventory item and
+forecast rather than depending on the sample data.
 
-### ✅ New Functionality Covered
-Recent additions are fully tested:
-- Stable demand items with < 2% change requirement
-- New demand forecast items (5 total stable items)
-- Varied monthly spending data
-- Cost category completeness
+### Referential Integrity
+Both demand forecasts and backlog items are asserted to reference real
+inventory SKUs with matching names, because the restocking recommender and
+the UI join those datasets to inventory.
 
 ## Running the Tests
 
 ```bash
 cd tests
-python -m pytest backend/ -v
+uv run pytest backend/ -v
 ```
 
 ## Test Results
-- **Total Tests**: 55
-- **Passed**: 55 ✅
+- **Total Tests**: 69
+- **Passed**: 69
 - **Failed**: 0
-- **Warnings**: 3 (configuration-related, non-critical)
-
-All tests validate the **actual implementation** without cheating or hardcoding success values!
