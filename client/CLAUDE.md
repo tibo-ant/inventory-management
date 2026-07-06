@@ -353,7 +353,10 @@ watchDebounced(
 // api.js
 import axios from 'axios'
 
-const API_BASE = 'http://localhost:8001/api'
+// Relative URL: the Vite dev server proxies /api to the backend
+// (see vite.config.js). Never hardcode http://localhost:8001 here —
+// that resolves on the BROWSER's machine and breaks behind a port forward.
+const API_BASE = '/api'
 
 export const api = {
   async getItems(filters) {

@@ -1,6 +1,10 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:8001/api'
+// Relative URL: requests stay on the frontend's own origin and the Vite dev
+// server proxies /api to the backend (see vite.config.js). A hardcoded
+// http://localhost:8001 would resolve on the BROWSER's machine, which breaks
+// as soon as the app is accessed through a port forward or from another host.
+const API_BASE_URL = '/api'
 
 export const api = {
   async getInventory(filters = {}) {
@@ -61,6 +65,16 @@ export const api = {
 
   async getMonthlySpending() {
     const response = await axios.get(`${API_BASE_URL}/spending/monthly`)
+    return response.data
+  },
+
+  async getQuarterlyReports() {
+    const response = await axios.get(`${API_BASE_URL}/reports/quarterly`)
+    return response.data
+  },
+
+  async getMonthlyTrends() {
+    const response = await axios.get(`${API_BASE_URL}/reports/monthly-trends`)
     return response.data
   },
 

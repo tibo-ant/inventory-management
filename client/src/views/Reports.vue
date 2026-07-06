@@ -125,7 +125,7 @@
 </template>
 
 <script>
-import axios from 'axios'
+import { api } from '../api'
 
 export default {
   name: 'Reports',
@@ -153,14 +153,13 @@ export default {
 
         // Fetch quarterly data
         console.log('Fetching quarterly data...')
-        const quarterlyResponse = await axios.get('http://localhost:8001/api/reports/quarterly')
-        this.quarterlyData = quarterlyResponse.data
+        // Route through the shared api client (relative /api base) so this works behind a port forward, matching the rest of the app
+        this.quarterlyData = await api.getQuarterlyReports()
         console.log('Quarterly data:', this.quarterlyData)
 
         // Fetch monthly data
         console.log('Fetching monthly data...')
-        const monthlyResponse = await axios.get('http://localhost:8001/api/reports/monthly-trends')
-        this.monthlyData = monthlyResponse.data
+        this.monthlyData = await api.getMonthlyTrends()
         console.log('Monthly data:', this.monthlyData)
 
         // Calculate summary stats
